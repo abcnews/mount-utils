@@ -32,7 +32,7 @@ import {
 [...document.querySelectorAll(MOUNT_SELECTOR)]
 // > [<div id="abc" data-mount>, <a id="abc123">, <a name="def">]
 
-[...document.querySelector(exactMountSelector('abc'))]
+[...document.querySelectorAll(exactMountSelector('abc'))]
 // > [<div id="abc" data-mount>]
 
 [...document.querySelectorAll(prefixedMountSelector('abc'))]
