@@ -16,7 +16,7 @@ type InlineMount = Element & {
   name: MountValue;
 };
 
-type Mount = BlockMount | DeprecatedInlineMount | InlineMount;
+export type Mount = BlockMount | DeprecatedInlineMount | InlineMount;
 
 interface MountSelectorCache {
   [key: string]: MountSelector;
