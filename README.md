@@ -134,7 +134,7 @@ isMount(document.body.firstElementChild);
 // > true
 ```
 
-It first checks that the argument is an Element, then checks that it matches `MOUNT_SELECTOR`.
+It first checks that the argument is an `Element`, then checks that it matches `MOUNT_SELECTOR`.
 
 ### `isExactMount(x: unknown, value: string): boolean`
 
@@ -218,7 +218,7 @@ Returns the value of the applicable attribute a the mount point, with the `prefi
 ```js
 import { getTrailingMountValue } from '@abcnews/mount-utils';
 
-[...document.body.children].map((el) => getTrailingMountValue(el));
+[...document.body.children].map((el) => getTrailingMountValue(el, 'abc'));
 // > ['', 'def, '123']
 ```
 
