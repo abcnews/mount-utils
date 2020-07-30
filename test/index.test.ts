@@ -8,6 +8,7 @@ import {
   getMountValue,
   getTrailingMountValue,
   ensureBlockMount,
+  selectMountPoints,
 } from '../src';
 
 function assertMount(x: unknown): asserts x is Mount {
@@ -166,5 +167,84 @@ describe('ensureBlockMount', () => {
     mount.name = 'test';
     assertMount(mount);
     expect(() => ensureBlockMount(mount)).toThrow();
+  });
+
+  test('should set relevant attributes on created block elements', () => {
+    document.body.innerHTML = `
+    <div>
+      <a name="test"></a>
+      <a id="test"></a>
+    </div>
+    `;
+    const mounts = Array.from(
+      document.querySelectorAll(exactMountSelector('test'))
+    )
+      .filter(isMount)
+      .map(ensureBlockMount);
+
+    expect(mounts[0].id).toBe('test');
+    expect(mounts[1].id).toBe('test');
+    expect(mounts[0].dataset.mount).toBeDefined();
+    expect(mounts[1].dataset.mount).toBeDefined();
+  });
+});
+
+describe('selectMountPoints', () => {
+  beforeEach(() => {
+    document.body.innerHTML = `
+    <div>
+      <a name="tests"></a>
+      <div id="test" data-mount></div>
+      <a name="test" data-mount-used="OTHER"></a>
+    </div>
+    `;
+  });
+
+  test('should return an array', () => {
+    expect(selectMountPoints('test')).toBeInstanceOf(Array);
+  });
+
+  test('should exclude used points on subsequent calls', () => {
+    expect(selectMountPoints('test').length).toBe(2);
+    expect(selectMountPoints('test').length).toBe(0);
+  });
+
+  test('should return used points if asked to', () => {
+    expect(selectMountPoints('test').length).toBe(2);
+    expect(selectMountPoints('test', { includeOwnUsed: true }).length).toBe(2);
+  });
+
+  test('should not mark points as used if asked not to', () => {
+    expect(selectMountPoints('test', { markAsUsed: false }).length).toBe(2);
+    expect(selectMountPoints('test').length).toBe(2);
+  });
+
+  test('should not covert to block mounts by default', () => {
+    expect(selectMountPoints('test')[0].tagName).toBe('A');
+  });
+
+  test('should covert to block mounts when asked to', () => {
+    expect(selectMountPoints('test', { convertToBlock: true })[0].tagName).toBe(
+      'DIV'
+    );
+  });
+
+  test('should keep the used indicator during mount point coversions', () => {
+    selectMountPoints('test', { convertToBlock: true });
+    expect(
+      selectMountPoints('test', { includeOwnUsed: true })[0].dataset.mountUsed
+    ).toBeDefined();
+  });
+
+  test('should match based on prefix by default', () => {
+    expect(selectMountPoints('test').length).toBe(2);
+  });
+
+  test('should only match exact selectors if asked to', () => {
+    expect(selectMountPoints('test', { exact: true }).length).toBe(1);
+  });
+
+  test('should not return points used by other instances', () => {
+    expect(selectMountPoints('test', { includeOwnUsed: true }).length).toBe(2);
   });
 });
