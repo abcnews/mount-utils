@@ -8,3 +8,4 @@ node_modules
 bin
 dist
 example/public/bundle.js
+coverage

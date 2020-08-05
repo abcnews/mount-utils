@@ -154,16 +154,18 @@ export function isUsed(mount: Mount): boolean {
   return !!mount.dataset.mountUsed;
 }
 
-export function isUsedBy(mount: Mount): string | undefined {
+function isUsedBy(mount: Mount): string | undefined {
   return mount.dataset.mountUsed;
 }
 
 export function useMount(mount: Mount): Mount {
+  if (mount.dataset.mountUsed && mount.dataset.mountUsed !== INSTANCE_ID)
+    throw new Error('Mount point already used.');
   mount.dataset.mountUsed = INSTANCE_ID;
   return mount;
 }
 
-export function selectMountPoints(
+export function selectMount(
   selector: string,
   {
     exact = false,
