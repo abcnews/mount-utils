@@ -165,7 +165,7 @@ export function useMount(mount: Mount): Mount {
   return mount;
 }
 
-export function selectMount(
+export function selectMounts(
   selector: string,
   {
     exact = false,
