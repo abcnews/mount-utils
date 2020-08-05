@@ -240,13 +240,13 @@ describe('selectMounts', () => {
     expect(selectMounts('test').length).toBe(2);
   });
 
-  test('should not covert to block mounts by default', () => {
-    expect(selectMounts('test')[0].tagName).toBe('A');
+  test('should covert to block mounts by default', () => {
+    expect(selectMounts('test')[0].tagName).toBe('DIV');
   });
 
-  test('should covert to block mounts when asked to', () => {
-    expect(selectMounts('test', { convertToBlock: true })[0].tagName).toBe(
-      'DIV'
+  test('should not covert to block mounts when requested', () => {
+    expect(selectMounts('test', { convertToBlock: false })[0].tagName).toBe(
+      'A'
     );
   });
 

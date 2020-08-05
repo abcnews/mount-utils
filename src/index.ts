@@ -171,7 +171,7 @@ export function selectMounts(
     exact = false,
     includeOwnUsed = false,
     markAsUsed = true,
-    convertToBlock = false,
+    convertToBlock = true,
   }: Options = {}
 ): Mount[] {
   const s = exact
