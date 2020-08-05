@@ -60,7 +60,7 @@ const MOUNT_SELECTOR_TEMPLATE: MountSelectorTemplate = [
   ']:not([href]),a[name',
   ']:not([href])',
 ];
-export const MOUNT_SELECTOR: MountSelector = MOUNT_SELECTOR_TEMPLATE.join('');
+const MOUNT_SELECTOR: MountSelector = MOUNT_SELECTOR_TEMPLATE.join('');
 
 const mountSelectorCache: MountSelectorCache = {};
 
@@ -72,11 +72,11 @@ function cachedMountSelector(cacheKey: string): MountSelector {
   return mountSelectorCache[cacheKey];
 }
 
-export function exactMountSelector(value: MountValue): MountSelector {
+function exactMountSelector(value: MountValue): MountSelector {
   return cachedMountSelector(`="${value}"`);
 }
 
-export function prefixedMountSelector(prefix: MountValuePrefix): MountSelector {
+function prefixedMountSelector(prefix: MountValuePrefix): MountSelector {
   return cachedMountSelector(`^="${prefix}"`);
 }
 

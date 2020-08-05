@@ -3,8 +3,6 @@ import {
   isMount,
   isExactMount,
   isPrefixedMount,
-  exactMountSelector,
-  prefixedMountSelector,
   getMountValue,
   getTrailingMountValue,
   ensureBlockMount,
@@ -18,22 +16,6 @@ function assertMount(x: unknown): asserts x is Mount {
     throw new Error(`Argument is not a Mount: ${x}`);
   }
 }
-
-describe('exactMountSelector', () => {
-  test('should return the correct selector string', () => {
-    expect(exactMountSelector('exact')).toBe(
-      '[data-mount][id="exact"],a[id="exact"]:not([href]),a[name="exact"]:not([href])'
-    );
-  });
-});
-
-describe('prefixedMountSelector', () => {
-  test('should return the correct selector string', () => {
-    expect(prefixedMountSelector('exact')).toBe(
-      '[data-mount][id^="exact"],a[id^="exact"]:not([href]),a[name^="exact"]:not([href])'
-    );
-  });
-});
 
 describe('isMount', () => {
   test('should not detect non-element objects', () => {
@@ -146,7 +128,7 @@ describe('ensureBlockMount', () => {
       <a name="test"></a>
     </div>
     `;
-    const mount = document.querySelector(exactMountSelector('test'));
+    const mount = document.querySelector('a[name="test"]');
     assertMount(mount);
     const block = ensureBlockMount(mount);
     expect(block.tagName).toBe('DIV');
@@ -158,7 +140,7 @@ describe('ensureBlockMount', () => {
       <div id="test" data-mount></div>
     </div>
     `;
-    const mount = document.querySelector(exactMountSelector('test'));
+    const mount = document.querySelector('[id="test"]');
     assertMount(mount);
     const block = ensureBlockMount(mount);
     expect(block).toBe(mount);
@@ -179,7 +161,7 @@ describe('ensureBlockMount', () => {
     </div>
     `;
     const mounts = Array.from(
-      document.querySelectorAll(exactMountSelector('test'))
+      document.querySelectorAll('[id="test"],[name="test"]')
     )
       .filter(isMount)
       .map(ensureBlockMount);
