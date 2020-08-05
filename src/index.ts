@@ -1,3 +1,5 @@
+import './polyfills';
+
 type MountValue = string;
 type MountValuePrefix = string;
 type MountSelector = string;
@@ -5,22 +7,52 @@ type MountSelectorTemplate = string[];
 type BlockMount = Element & {
   tagName: 'DIV';
   id: MountValue;
-  'data-mount': string;
+  dataset: {
+    mount: string;
+    mountUsed: string | undefined;
+  };
 };
 type DeprecatedInlineMount = Element & {
   tagName: 'A';
   id: MountValue;
+  dataset: {
+    mountUsed: string | undefined;
+  };
 };
 type InlineMount = Element & {
   tagName: 'A';
   name: MountValue;
+  dataset: {
+    mountUsed: string | undefined;
+  };
 };
 
 export type Mount = BlockMount | DeprecatedInlineMount | InlineMount;
 
+type Options = {
+  exact?: boolean;
+  includeOwnUsed?: boolean;
+  markAsUsed?: boolean;
+  convertToBlock?: boolean;
+};
+
 interface MountSelectorCache {
   [key: string]: MountSelector;
 }
+
+// https://gist.github.com/LeverOne/1308368
+// Small local implementation to avoid a dependency
+const INSTANCE_ID: string = ((a?: any, b?: any): string => {
+  for (
+    b = a = '';
+    a++ < 36;
+    b +=
+      (a * 51) & 52
+        ? (a ^ 15 ? 8 ^ (Math.random() * (a ^ 20 ? 16 : 4)) : 4).toString(16)
+        : '-'
+  );
+  return b;
+})();
 
 const MOUNT_SELECTOR_TEMPLATE: MountSelectorTemplate = [
   '[data-mount][id',
@@ -54,14 +86,6 @@ function isNode(x: unknown): x is Node {
 
 function isElement(x: unknown): x is Element {
   return isNode(x) && x.nodeType === Node.ELEMENT_NODE;
-}
-
-// Polyfill Element.prototype.matches, if required
-if (!Element.prototype.matches) {
-  Element.prototype.matches =
-    // @ts-ignore: Property 'msMatchesSelector' does not exist on type 'Element'
-    Element.prototype.msMatchesSelector ||
-    Element.prototype.webkitMatchesSelector;
 }
 
 export function isMount(x: unknown): x is Mount {
@@ -100,6 +124,8 @@ function createBlockMountBasedOnInlineMount(
     'id',
     el.getAttribute('id') || el.getAttribute('name') || ''
   );
+  el.dataset.mountUsed &&
+    blockEl.setAttribute('data-mount-used', el.dataset.mountUsed);
 
   return blockEl as BlockMount;
 }
@@ -122,4 +148,44 @@ export function ensureBlockMount(el: Mount): BlockMount {
   }
 
   return blockEl as BlockMount;
+}
+
+export function isUsed(mount: Mount): boolean {
+  return !!mount.dataset.mountUsed;
+}
+
+function isUsedBy(mount: Mount): string | undefined {
+  return mount.dataset.mountUsed;
+}
+
+export function useMount(mount: Mount): Mount {
+  if (mount.dataset.mountUsed && mount.dataset.mountUsed !== INSTANCE_ID)
+    throw new Error('Mount point already used.');
+  mount.dataset.mountUsed = INSTANCE_ID;
+  return mount;
+}
+
+export function selectMounts(
+  selector: string,
+  {
+    exact = false,
+    includeOwnUsed = false,
+    markAsUsed = true,
+    convertToBlock = true,
+  }: Options = {}
+): Mount[] {
+  const s = exact
+    ? exactMountSelector(selector)
+    : prefixedMountSelector(selector);
+  return Array.from(document.querySelectorAll(s))
+    .filter(isMount)
+    .filter(mount =>
+      includeOwnUsed
+        ? isUsedBy(mount) === INSTANCE_ID || !isUsed(mount)
+        : !isUsed(mount)
+    )
+    .map(mount => {
+      markAsUsed && useMount(mount);
+      return convertToBlock ? ensureBlockMount(mount) : mount;
+    });
 }
