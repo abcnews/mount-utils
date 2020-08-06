@@ -1,10 +1,7 @@
 import {
   Mount,
   isMount,
-  isExactMount,
-  isPrefixedMount,
   getMountValue,
-  getTrailingMountValue,
   ensureBlockMount,
   selectMounts,
   useMount,
@@ -55,37 +52,37 @@ describe('isMount', () => {
     mount.href = 'link';
     expect(isMount(mount)).toBe(false);
   });
-});
 
-describe('isExactMount', () => {
-  test('should detect <div id="exact" data-mount />', () => {
-    const mount = document.createElement('div');
-    mount.dataset.mount = 'true';
-    mount.id = 'exact';
-    expect(isExactMount(mount, 'exact')).toBe(true);
+  describe('with exact flag', () => {
+    test('should detect <div id="exact" data-mount />', () => {
+      const mount = document.createElement('div');
+      mount.dataset.mount = 'true';
+      mount.id = 'exact';
+      expect(isMount(mount, 'exact', true)).toBe(true);
+    });
+
+    test('should not detect <div id="exactASprefix data-mount />', () => {
+      const mount = document.createElement('div');
+      mount.dataset.mount = 'true';
+      mount.id = 'exactASprefix';
+      expect(isMount(mount, 'exact', true)).toBe(false);
+    });
   });
 
-  test('should not detect <div id="exactASprefix data-mount />', () => {
-    const mount = document.createElement('div');
-    mount.dataset.mount = 'true';
-    mount.id = 'exactASprefix';
-    expect(isExactMount(mount, 'exact')).toBe(false);
-  });
-});
+  describe('with prefix supplied', () => {
+    test('should detect <div id="exact" data-mount />', () => {
+      const mount = document.createElement('div');
+      mount.dataset.mount = 'true';
+      mount.id = 'exact';
+      expect(isMount(mount, 'exact')).toBe(true);
+    });
 
-describe('isPrefixedMount', () => {
-  test('should detect <div id="exact" data-mount />', () => {
-    const mount = document.createElement('div');
-    mount.dataset.mount = 'true';
-    mount.id = 'exact';
-    expect(isPrefixedMount(mount, 'exact')).toBe(true);
-  });
-
-  test('should detect <div id="exactASprefix data-mount />', () => {
-    const mount = document.createElement('div');
-    mount.dataset.mount = 'true';
-    mount.id = 'exactASprefix';
-    expect(isPrefixedMount(mount, 'exact')).toBe(true);
+    test('should detect <div id="exactASprefix data-mount />', () => {
+      const mount = document.createElement('div');
+      mount.dataset.mount = 'true';
+      mount.id = 'exactASprefix';
+      expect(isMount(mount, 'exact')).toBe(true);
+    });
   });
 });
 
@@ -103,21 +100,26 @@ describe('getMountValue', () => {
     mount.id = 'valueOFid';
     expect(getMountValue(mount)).toBe('valueOFid');
   });
-});
 
-describe('getTrailingMountValue', () => {
-  const mount = document.createElement('a');
-  mount.name = 'valueOFname';
+  describe('with prefix supplied', () => {
+    const mount = document.createElement('a');
+    mount.name = 'valueOFname';
 
-  assertMount(mount);
+    assertMount(mount);
 
-  test('should return the post-prefix content of the name attribute', () => {
-    expect(getTrailingMountValue(mount, 'value')).toBe('OFname');
-  });
+    test('should return the post-prefix content of the name attribute', () => {
+      expect(getMountValue(mount, 'value')).toBe('OFname');
+    });
 
-  test('should return the post-prefix content of the ID attribute', () => {
-    mount.id = 'valueOFid';
-    expect(getTrailingMountValue(mount, 'value')).toBe('OFid');
+    test('should return the post-prefix content of the ID attribute', () => {
+      mount.id = 'valueOFid';
+      expect(getMountValue(mount, 'value')).toBe('OFid');
+    });
+
+    test("should not remove prefix that doesn't match", () => {
+      mount.id = 'valueOFid';
+      expect(getMountValue(mount, 'balue')).toBe('valueOFid');
+    });
   });
 });
 
@@ -163,7 +165,7 @@ describe('ensureBlockMount', () => {
     const mounts = Array.from(
       document.querySelectorAll('[id="test"],[name="test"]')
     )
-      .filter(isMount)
+      .filter((el): el is Mount => isMount(el))
       .map(ensureBlockMount);
 
     expect(mounts[0].id).toBe('test');

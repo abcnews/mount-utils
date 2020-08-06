@@ -29,7 +29,7 @@ type InlineMount = Element & {
 
 export type Mount = BlockMount | DeprecatedInlineMount | InlineMount;
 
-type Options = {
+type SelectMountsOptions = {
   exact?: boolean;
   includeOwnUsed?: boolean;
   markAsUsed?: boolean;
@@ -39,6 +39,11 @@ type Options = {
 interface MountSelectorCache {
   [key: string]: MountSelector;
 }
+
+const ERROR_INLINE_MOUNT_HAS_NO_PARENT = 'Inline mount has no parent element';
+const ERROR_ELEMENT_MISSING_NAME_OR_ID =
+  'Name or id attribute required. Non-mount elements should not be converted to block mounts.';
+const ERROR_MOUNT_ALREADY_USED = 'Mount point already used.';
 
 // https://gist.github.com/LeverOne/1308368
 // Small local implementation to avoid a dependency
@@ -88,49 +93,46 @@ function isElement(x: unknown): x is Element {
   return isNode(x) && x.nodeType === Node.ELEMENT_NODE;
 }
 
-export function isMount(x: unknown): x is Mount {
-  return isElement(x) && x.matches(MOUNT_SELECTOR);
-}
-
-export function isExactMount(x: unknown, value: MountValue): x is Mount {
-  return isElement(x) && x.matches(exactMountSelector(value));
-}
-
-export function isPrefixedMount(
+export function isMount(
   x: unknown,
-  prefix: MountValuePrefix
+  value?: string,
+  exact: boolean = false
 ): x is Mount {
-  return isElement(x) && x.matches(prefixedMountSelector(prefix));
+  return (
+    isElement(x) &&
+    (value === undefined
+      ? x.matches(MOUNT_SELECTOR)
+      : exact
+      ? x.matches(exactMountSelector(value))
+      : x.matches(prefixedMountSelector(value)))
+  );
 }
 
-export function getMountValue(el: Mount): MountValue {
-  return el.getAttribute('id') || el.getAttribute('name') || '';
-}
-
-export function getTrailingMountValue(
-  el: Mount,
-  prefix: MountValuePrefix
-): MountValue {
-  return getMountValue(el).slice(prefix.length);
+export function getMountValue(el: Mount, value: string = ''): MountValue {
+  // The filter here is inline with what's possible as anchor IDs in PL https://stash.abc-dev.net.au/projects/PL/repos/pl/commits/01a159f206d1f5f2e34f5424a767fc373a21b669#libraries/rich-text-from-terminus-text/src/visitors/convertHashtagToAnchor.js
+  const re = new RegExp(`^${value.replace(/[^\w.\-:]/g, '')}`);
+  return (el.getAttribute('id') || el.getAttribute('name') || '').replace(
+    re,
+    ''
+  );
 }
 
 function createBlockMountBasedOnInlineMount(
   el: DeprecatedInlineMount | InlineMount
 ): BlockMount {
   const blockEl: Element = document.createElement('div');
+  const id = el.getAttribute('id') || el.getAttribute('name');
+  if (typeof id !== 'string') {
+    throw new Error(ERROR_ELEMENT_MISSING_NAME_OR_ID);
+  }
 
   blockEl.setAttribute('data-mount', '');
-  blockEl.setAttribute(
-    'id',
-    el.getAttribute('id') || el.getAttribute('name') || ''
-  );
+  blockEl.setAttribute('id', id);
   el.dataset.mountUsed &&
     blockEl.setAttribute('data-mount-used', el.dataset.mountUsed);
 
   return blockEl as BlockMount;
 }
-
-const ERROR_INLINE_MOUNT_HAS_NO_PARENT = 'Inline mount has no parent element';
 
 export function ensureBlockMount(el: Mount): BlockMount {
   let blockEl: Mount = el;
@@ -160,7 +162,7 @@ function isUsedBy(mount: Mount): string | undefined {
 
 export function useMount(mount: Mount): Mount {
   if (mount.dataset.mountUsed && mount.dataset.mountUsed !== INSTANCE_ID)
-    throw new Error('Mount point already used.');
+    throw new Error(ERROR_MOUNT_ALREADY_USED);
   mount.dataset.mountUsed = INSTANCE_ID;
   return mount;
 }
@@ -172,7 +174,7 @@ export function selectMounts(
     includeOwnUsed = false,
     markAsUsed = true,
     convertToBlock = true,
-  }: Options = {}
+  }: SelectMountsOptions = {}
 ): Mount[] {
   const s =
     selector !== undefined
@@ -181,7 +183,7 @@ export function selectMounts(
         : prefixedMountSelector(selector)
       : MOUNT_SELECTOR;
   return Array.from(document.querySelectorAll(s))
-    .filter(isMount)
+    .filter((el): el is Mount => isMount(el))
     .filter(mount =>
       includeOwnUsed
         ? isUsedBy(mount) === INSTANCE_ID || !isUsed(mount)
