@@ -22,21 +22,19 @@ npm i @abcnews/mount-utils
 
 ```js
 import {
-  MOUNT_SELECTOR,
-  exactMountSelector,
-  prefixedMountSelector,
   isMount,
   getMountValue,
+  selectMounts
 } from '@abcnews/mount-utils';
 
-[...document.querySelectorAll(MOUNT_SELECTOR)]
-// > [<div id="abc" data-mount>, <a id="abc123">, <a name="def">]
+selectMounts();
+// > [<div id="abc" data-mount>, <div id="abc123" data-mount>, <div id="def" data-mount>]
 
-[...document.querySelectorAll(exactMountSelector('abc'))]
+selectMounts('abc', {exact: true})
 // > [<div id="abc" data-mount>]
 
-[...document.querySelectorAll(prefixedMountSelector('abc'))]
-// > [<div id="abc" data-mount>, <a id="abc123">]
+selectMounts('abc')
+// > [<div id="abc" data-mount>, <div id="abc123" data-mount>]
 
 [...document.body.children].filter(isMount).map(getMountValue);
 // > ['abc', 'abc123, 'def']
@@ -64,58 +62,54 @@ Of course, this complicates our mount point selection further, which is the main
 
 ## API
 
-### `MOUNT_SELECTOR`
+### `selectMounts(selector?: string, options?: SelectMountsOptions): Mount[]`
 
-This is a catch-all selector for mount points across all applications.
+Returns an array of mount nodes that match the selector and may have been transformed as per the supplied options.
 
-```js
-import { MOUNT_SELECTOR } from '@abcnews/mount-utils';
+Any mounts that have been marked as used by another instance of this library will always be excluded from the results.
 
-console.log(MOUNT_SELECTOR);
-// > "[data-mount][id],a[id]:not([href]),a[name]:not([href])"
+```ts
+type SelectMountsOptions{
+  exact?: boolean; // default false
+  includeOwnUsed?: boolean; // default false
+  markAsUsed?: boolean; // default true
+  convertToBlock?: boolean; // default true
+}
 ```
 
-Coupled with `document.querySelector`, it will return elements such as:
+Note that the examples below assume that they're run in isolation. In reality, unless the `markAsUsed` option is false and/or the `includeOwnUsed` options is true, the same mounts would never be returned on a subsequent call.
 
-- `<div id="abc" data-mount />`,
-- `<a id="def" />` and
-- `<a name="ghi" />`
-
-### `exactMountSelector(value: string): string`
-
-Generate a mount selector for the given `value`. It looks similar to `MOUNT_SELECTOR`, but includes an 'attribute equals' pattern for each of the applicable attributes.
-
-```js
-import { exactMountSelector } from '@abcnews/mount-utils';
-
-exactMountSelector('abc');
-// > "[data-mount][id="abc"],a[id="abc"]:not([href]),a[name="abc"]:not([href])"
+```html
+<body>
+  <a name="abc" />
+  <a id="abcdef" />
+  <div id="ghi" data-mount />
+  <div id="abc123" data-mount />
+  <div id="other" data-mount data-mount-used="some-uuid" />
+</body>
 ```
 
-This function is memoised, so subsequent calls with the same `value` will fetch their response from a cache of selectors to improve performance.
-
-### `prefixedMountSelector(prefix: string): string`
-
-Generate a mount selector for the given `prefix`. It looks similar to `MOUNT_SELECTOR`, but includes an 'attribute value starts with' pattern for each of the applicable attributes.
-
 ```js
-import { prefixedMountSelector } from '@abcnews/mount-utils';
+import { selectMounts } from '@abcnews/mount-utils';
 
-prefixedMountSelector('abc');
-// > "[data-mount][id^="abc"],a[id^="abc"]:not([href]),a[name^="abc"]:not([href])"
+selectMounts();
+// > [<div id="abc">, <a id="abcdef">, <div id="ghi">, <div id="abc123">]
+
+selectMounts('abc');
+// > [<div id="abc">, <div id="abcdef">, <div id="abc123">]
+
+selectMounts('abc', { convertToBlock: false });
+// > [<a name="abc">, <a id="abcdef">, <div id="abc123">]
+
+selectMounts('abc', { exact: true });
+// > [<div id="abc">]
 ```
 
-Coupled with `document.querySelector`, the above example would match elements such as:
-
-- `<div id="abc" data-mount />`,
-- `<a id="abc123" />` and
-- `<a name="abcDEF" />`
-
-This function is memoised, so subsequent calls with the same `prefix` will fetch their response from a cache of selectors to improve performance.
-
-### `isMount(x: unknown): boolean`
+### `isMount(x: unknown, selector?: string, exact?: boolean): boolean`
 
 Returns whether the argument passed in is a mount point.
+
+Will return `true` even if the mount is marked as used by this instance of the utility or any other.
 
 ```html
 <body>
@@ -124,25 +118,23 @@ Returns whether the argument passed in is a mount point.
 ```
 
 ```js
-import { isMount, MOUNT_SELECTOR } from '@abcnews/mount-utils';
+import { isMount } from '@abcnews/mount-utils';
 
 isMount(123);
 // > false
+
 isMount(document.body);
 // > false
+
 isMount(document.body.firstElementChild);
-// > true
+// > false
 ```
 
-It first checks that the argument is an `Element`, then checks that it matches `MOUNT_SELECTOR`.
+It first checks that the argument is an `Element`, then checks that it has attributes matching a valid mount point.
 
-### `isExactMount(x: unknown, value: string): boolean`
+#### Use with a selector value
 
-Returns whether the first argument passed in is a mount point with the given `value`.
-
-This works the same as `isMount`, but matches against `exactMountSelector(value)`, rather than `MOUNT_SELECTOR`.
-
-For the JS example below, assume the following DOM exists:
+Returns whether the first argument passed in is a mount point _and_ matches a given selector value (as a prefix by default and optionally as an exact match by passing `true` as the third argument).
 
 ```html
 <body>
@@ -155,71 +147,37 @@ For the JS example below, assume the following DOM exists:
 ```
 
 ```js
-import { isExactMount, MOUNT_SELECTOR } from '@abcnews/mount-utils';
+[...document.body.children].map(el => isMount(el));
+// > [false, true, true, true, true]
 
-[...document.body.children].map((el) => isExactMount(el, 'abc'));
+[...document.body.children].map(el => isMount(el, 'abc'));
+// > [false, true, true, true, false]
+
+[...document.body.children].map(el => isMount(el, 'abc', true));
 // > [false, true, false, false, false]
 ```
 
-### `isPrefixedMount(x: unknown, prefix: string): boolean`
+### `getMountValue(el: Element, prefix?: string): string`
 
-Returns whether the argument passed in is a mount point with the given `prefix`.
-
-This works the same as `isMount`, but matches against `prefixedMountSelector(prefix)`, rather than `MOUNT_SELECTOR`.
-
-```html
-<body>
-  <p>Nope</p>
-  <a name="abc" />
-  <a id="abc123" />
-  <div id="abc456" data-mount />
-  <div id="def" data-mount />
-</body>
-```
-
-```js
-import { isPrefixedMount, MOUNT_SELECTOR } from '@abcnews/mount-utils';
-
-[...document.body.children].map((el) => isPrefixedMount(el, 'abc'));
-// > [false, true, true, true, false]
-```
-
-### `getMountValue(el: Element): string`
-
-Returns the value of the applicable attribute on a mount point.
+Returns the value of the applicable attribute on a mount point and optionally trims a supplied prefix.
 
 ```html
 <body>
   <a name="abc" />
-  <a id="def" />
+  <a id="abcdef" />
   <div id="ghi" data-mount />
+  <div id="abc123" data-mount />
 </body>
 ```
 
 ```js
 import { getMountValue } from '@abcnews/mount-utils';
 
-[...document.body.children].map((el) => getMountValue(el));
-// > ['abc', 'def, 'ghi']
-```
+[...document.body.children].map(el => getMountValue(el));
+// > ['abc', 'abcdef, 'ghi', 'abc123']
 
-### `getTrailingMountValue(el: Element, prefix: string): string`
-
-Returns the value of the applicable attribute a the mount point, with the `prefix` removed.
-
-```html
-<body>
-  <a name="abc" />
-  <a id="abcdef" />
-  <div id="abc123" data-mount />
-</body>
-```
-
-```js
-import { getTrailingMountValue } from '@abcnews/mount-utils';
-
-[...document.body.children].map((el) => getTrailingMountValue(el, 'abc'));
-// > ['', 'def, '123']
+[...document.body.children].map(el => getMountValue(el, 'abc'));
+// > ['', 'def, 'ghi', '123']
 ```
 
 ### `ensureBlockMount(el: Element): Element`
@@ -239,7 +197,7 @@ Ensures that we have a block mount (matching `div[id][data-mount]`) to work with
 ```js
 import { ensureBlockMount } from '@abcnews/mount-utils';
 
-[...document.body.children].map((el) => ensureBlockMount(el));
+[...document.body.children].map(el => ensureBlockMount(el));
 // > [<div id="abc" data-mount>, <div id="def" data-mount>, <div id="ghi" data-mount>]
 ```
 
@@ -274,3 +232,4 @@ Think of `ensureBlockMount` as a normalisation function that will enable you to 
 ## Authors
 
 - Colin Gourlay ([Gourlay.Colin@abc.net.au](mailto:Gourlay.Colin@abc.net.au))
+- Simon Elvery ([Elvery.Simon@abc.net.au](mailto:Elvery.Simon@abc.net.au))
