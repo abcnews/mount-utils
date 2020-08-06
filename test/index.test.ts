@@ -199,8 +199,13 @@ describe('selectMounts', () => {
       <a name="tests"></a>
       <div id="test" data-mount></div>
       <a name="test" data-mount-used="OTHER"></a>
+      <a id="other"></a>
     </div>
     `;
+  });
+
+  test('should select all unused mounts when no selector is passed', () => {
+    expect(selectMounts()).toHaveLength(3);
   });
 
   test('should return an array', () => {

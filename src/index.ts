@@ -166,7 +166,7 @@ export function useMount(mount: Mount): Mount {
 }
 
 export function selectMounts(
-  selector: string,
+  selector?: string,
   {
     exact = false,
     includeOwnUsed = false,
@@ -174,9 +174,12 @@ export function selectMounts(
     convertToBlock = true,
   }: Options = {}
 ): Mount[] {
-  const s = exact
-    ? exactMountSelector(selector)
-    : prefixedMountSelector(selector);
+  const s =
+    selector !== undefined
+      ? exact
+        ? exactMountSelector(selector)
+        : prefixedMountSelector(selector)
+      : MOUNT_SELECTOR;
   return Array.from(document.querySelectorAll(s))
     .filter(isMount)
     .filter(mount =>
