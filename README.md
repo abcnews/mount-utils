@@ -66,8 +66,6 @@ Of course, this complicates our mount point selection further, which is the main
 
 Returns an array of mount nodes that match the selector and may have been transformed as per the supplied options.
 
-Any mounts that have been marked as used by another instance of this library will always be excluded from the results.
-
 ```ts
 type SelectMountsOptions{
   exact?: boolean; // default false
@@ -77,7 +75,9 @@ type SelectMountsOptions{
 }
 ```
 
-Note that the examples below assume that they're run in isolation. In reality, unless the `markAsUsed` option is false and/or the `includeOwnUsed` options is true, the same mounts would never be returned on a subsequent call.
+Any mount points that have been marked as used by another instance of this library will always be excluded from the results.
+
+The examples below assume that they're run in isolation. In reality, unless the `markAsUsed` option is `false` and/or the `includeOwnUsed` option is `true`, the same mounts would not be returned on a subsequent call.
 
 ```html
 <body>
@@ -109,7 +109,7 @@ selectMounts('abc', { exact: true });
 
 Returns whether the argument passed in is a mount point.
 
-Will return `true` even if the mount is marked as used by this instance of the utility or any other.
+Will return `true` for valid mount points even if marked as used, including those marked by another instance of this library.
 
 ```html
 <body>
@@ -127,7 +127,7 @@ isMount(document.body);
 // > false
 
 isMount(document.body.firstElementChild);
-// > false
+// > true
 ```
 
 It first checks that the argument is an `Element`, then checks that it has attributes matching a valid mount point.
@@ -228,6 +228,44 @@ el = ensureBlockMount(el);
 ```
 
 Think of `ensureBlockMount` as a normalisation function that will enable you to target (and style) all mount points as if they were Presentation Layer's first-class mount points. It's sometimes easier to work with them in this way, rather than having to consider three different forms throughout your codebase.
+
+### `useMount(mount: Mount)`
+
+Mark a mount as used. This should be used sparingly since `selectMounts` will do this automatically by default.
+
+A mount is considered used if it has a `data-mount-used="<some uuid>"` attribute set. The UUID is unique to the instance of this library.
+
+```html
+<body>
+  <div id="abc" data-mount />
+</body>
+```
+
+```js
+const els = selectMounts('abc', { markAsUsed: false });
+// > [<div id="abc" data-mount>]
+
+useMount(els[0]);
+// > <div id="abc" data-mount data-mount-used="<uuid>">
+```
+
+### `isUsed(mount: Mount)`
+
+Check if a mount point has been marked as used.
+
+```html
+<body>
+  <div id="abc" data-mount />
+</body>
+```
+
+```js
+selectMounts('abc').map(mnt => isUsed(mnt));
+// > [true]
+
+selectMounts('abc', { markAsUsed: false }).map(mnt => isUsed(mnt));
+// > [false]
+```
 
 ## Authors
 
