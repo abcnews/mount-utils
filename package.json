@@ -1,6 +1,6 @@
 {
   "name": "@abcnews/mount-utils",
-  "version": "2.0.0",
+  "version": "3.0.0",
   "description": "Utilities for working with mount points",
   "license": "MIT",
   "author": "Australian Broadcasting Corporation",
