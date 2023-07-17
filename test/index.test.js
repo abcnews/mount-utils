@@ -1,3 +1,7 @@
+/**
+ * @jest-environment jsdom
+ */
+
 // Testing code branches that would only be invoked in non-typescript usage
 
 const { getMountValue, ensureBlockMount } = require('../src/index.ts');

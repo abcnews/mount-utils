@@ -45,9 +45,11 @@ const ERROR_MOUNT_ALREADY_USED = 'Mount point already used.';
 
 // https://gist.github.com/LeverOne/1308368
 // Small local implementation to avoid a dependency
-const INSTANCE_ID: string = ((a?: any, b?: any): string => {
+const INSTANCE_ID: string = ((): string => {
+  let a = 0,
+    b;
   for (
-    b = a = '';
+    b = '';
     a++ < 36;
     b +=
       (a * 51) & 52
