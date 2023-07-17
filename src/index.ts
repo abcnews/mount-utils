@@ -1,5 +1,3 @@
-import './polyfills';
-
 type MountValue = string;
 type MountValuePrefix = string;
 type MountSelector = string;
@@ -184,12 +182,12 @@ export function selectMounts(
       : MOUNT_SELECTOR;
   return Array.from(document.querySelectorAll(s))
     .filter((el): el is Mount => isMount(el))
-    .filter(mount =>
+    .filter((mount) =>
       includeOwnUsed
         ? isUsedBy(mount) === INSTANCE_ID || !isUsed(mount)
         : !isUsed(mount)
     )
-    .map(mount => {
+    .map((mount) => {
       markAsUsed && useMount(mount);
       return convertToBlock ? ensureBlockMount(mount) : mount;
     });
