@@ -71,7 +71,6 @@ type SelectMountsOptions{
   exact?: boolean; // default false
   includeOwnUsed?: boolean; // default false
   markAsUsed?: boolean; // default true
-  convertToBlock?: boolean; // default true
 }
 ```
 
@@ -81,8 +80,8 @@ The examples below assume that they're run in isolation. In reality, unless the 
 
 ```html
 <body>
-  <a name="abc" />
-  <a id="abcdef" />
+  <div id="abc" />
+  <div id="abcdef" />
   <div id="ghi" data-mount />
   <div id="abc123" data-mount />
   <div id="other" data-mount data-mount-used="some-uuid" />
@@ -93,13 +92,10 @@ The examples below assume that they're run in isolation. In reality, unless the 
 import { selectMounts } from '@abcnews/mount-utils';
 
 selectMounts();
-// > [<div id="abc">, <a id="abcdef">, <div id="ghi">, <div id="abc123">]
+// > [<div id="abc">, <div id="abcdef">, <div id="ghi">, <div id="abc123">]
 
 selectMounts('abc');
 // > [<div id="abc">, <div id="abcdef">, <div id="abc123">]
-
-selectMounts('abc', { convertToBlock: false });
-// > [<a name="abc">, <a id="abcdef">, <div id="abc123">]
 
 selectMounts('abc', { exact: true });
 // > [<div id="abc">]
@@ -139,21 +135,21 @@ Returns whether the first argument passed in is a mount point _and_ matches a gi
 ```html
 <body>
   <p>Nope</p>
-  <a name="abc" />
-  <a id="abc123" />
+  <div id="abc" />
+  <div id="abc123" />
   <div id="abc456" data-mount />
   <div id="def" data-mount />
 </body>
 ```
 
 ```js
-[...document.body.children].map(el => isMount(el));
+[...document.body.children].map((el) => isMount(el));
 // > [false, true, true, true, true]
 
-[...document.body.children].map(el => isMount(el, 'abc'));
+[...document.body.children].map((el) => isMount(el, 'abc'));
 // > [false, true, true, true, false]
 
-[...document.body.children].map(el => isMount(el, 'abc', true));
+[...document.body.children].map((el) => isMount(el, 'abc', true));
 // > [false, true, false, false, false]
 ```
 
@@ -163,8 +159,8 @@ Returns the value of the applicable attribute on a mount point and optionally tr
 
 ```html
 <body>
-  <a name="abc" />
-  <a id="abcdef" />
+  <div id="abc" />
+  <div id="abcdef" />
   <div id="ghi" data-mount />
   <div id="abc123" data-mount />
 </body>
@@ -173,61 +169,12 @@ Returns the value of the applicable attribute on a mount point and optionally tr
 ```js
 import { getMountValue } from '@abcnews/mount-utils';
 
-[...document.body.children].map(el => getMountValue(el));
+[...document.body.children].map((el) => getMountValue(el));
 // > ['abc', 'abcdef, 'ghi', 'abc123']
 
-[...document.body.children].map(el => getMountValue(el, 'abc'));
+[...document.body.children].map((el) => getMountValue(el, 'abc'));
 // > ['', 'def, 'ghi', '123']
 ```
-
-### `ensureBlockMount(el: Element): Element`
-
-Ensures that we have a block mount (matching `div[id][data-mount]`) to work with (usually in order to append content).
-
-#### DOM Before
-
-```html
-<body>
-  <a name="abc" />
-  <a id="def" />
-  <div id="ghi" data-mount />
-</body>
-```
-
-```js
-import { ensureBlockMount } from '@abcnews/mount-utils';
-
-[...document.body.children].map(el => ensureBlockMount(el));
-// > [<div id="abc" data-mount>, <div id="def" data-mount>, <div id="ghi" data-mount>]
-```
-
-#### DOM After
-
-```html
-<body>
-  <div id="abc" data-mount />
-  <div id="def" data-mount />
-  <div id="ghi" data-mount />
-</body>
-```
-
-If the mount passed in is a block mount, it is returned as-is.
-
-If the mount passed in is an inline mount (matching `a[id]` or `a[name]`), it is replaced in the DOM by a newly created block mount (retaining the original value), which is then returned.
-
-_Note: If an inline mount is passed in which doesn't have a parent element (to facilitate replacement), an error is thrown._
-
-```js
-import { ensureBlockMount } from '@abcnews/mount-utils';
-
-let el = document.createElement('a');
-
-el.name = 'abc';
-el = ensureBlockMount(el);
-// > (error: Inline mount has no parent element)
-```
-
-Think of `ensureBlockMount` as a normalisation function that will enable you to target (and style) all mount points as if they were Presentation Layer's first-class mount points. It's sometimes easier to work with them in this way, rather than having to consider three different forms throughout your codebase.
 
 ### `useMount(mount: Mount)`
 
@@ -260,10 +207,10 @@ Check if a mount point has been marked as used.
 ```
 
 ```js
-selectMounts('abc').map(mnt => isUsed(mnt));
+selectMounts('abc').map((mnt) => isUsed(mnt));
 // > [true]
 
-selectMounts('abc', { markAsUsed: false }).map(mnt => isUsed(mnt));
+selectMounts('abc', { markAsUsed: false }).map((mnt) => isUsed(mnt));
 // > [false]
 ```
 

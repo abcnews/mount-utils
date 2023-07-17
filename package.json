@@ -42,7 +42,7 @@
     },
     {
       "path": "dist/index.js",
-      "limit": "1.5 KB"
+      "limit": "1 KB"
     }
   ],
   "prettier": {

@@ -10,22 +10,8 @@ type BlockMount = Element & {
     mountUsed: string | undefined;
   };
 };
-type DeprecatedInlineMount = Element & {
-  tagName: 'A';
-  id: MountValue;
-  dataset: {
-    mountUsed: string | undefined;
-  };
-};
-type InlineMount = Element & {
-  tagName: 'A';
-  name: MountValue;
-  dataset: {
-    mountUsed: string | undefined;
-  };
-};
 
-export type Mount = BlockMount | DeprecatedInlineMount | InlineMount;
+export type Mount = BlockMount;
 
 type SelectMountsOptions = {
   exact?: boolean;
@@ -38,9 +24,6 @@ interface MountSelectorCache {
   [key: string]: MountSelector;
 }
 
-const ERROR_INLINE_MOUNT_HAS_NO_PARENT = 'Inline mount has no parent element';
-const ERROR_ELEMENT_MISSING_NAME_OR_ID =
-  'Name or id attribute required. Non-mount elements should not be converted to block mounts.';
 const ERROR_MOUNT_ALREADY_USED = 'Mount point already used.';
 
 // https://gist.github.com/LeverOne/1308368
@@ -59,12 +42,7 @@ const INSTANCE_ID: string = ((): string => {
   return b;
 })();
 
-const MOUNT_SELECTOR_TEMPLATE: MountSelectorTemplate = [
-  '[data-mount][id',
-  '],a[id',
-  ']:not([href]),a[name',
-  ']:not([href])',
-];
+const MOUNT_SELECTOR_TEMPLATE: MountSelectorTemplate = ['[data-mount][id', ']'];
 const MOUNT_SELECTOR: MountSelector = MOUNT_SELECTOR_TEMPLATE.join('');
 
 const mountSelectorCache: MountSelectorCache = {};
@@ -117,41 +95,6 @@ export function getMountValue(el: Mount, value: string = ''): MountValue {
   );
 }
 
-function createBlockMountBasedOnInlineMount(
-  el: DeprecatedInlineMount | InlineMount
-): BlockMount {
-  const blockEl: Element = document.createElement('div');
-  const id = el.getAttribute('id') || el.getAttribute('name');
-  if (typeof id !== 'string') {
-    throw new Error(ERROR_ELEMENT_MISSING_NAME_OR_ID);
-  }
-
-  blockEl.setAttribute('data-mount', '');
-  blockEl.setAttribute('id', id);
-  el.dataset.mountUsed &&
-    blockEl.setAttribute('data-mount-used', el.dataset.mountUsed);
-
-  return blockEl as BlockMount;
-}
-
-export function ensureBlockMount(el: Mount): BlockMount {
-  let blockEl: Mount = el;
-
-  if (el.tagName === 'A') {
-    const parentEl: Element | null = el.parentElement;
-
-    if (parentEl === null) {
-      throw new Error(ERROR_INLINE_MOUNT_HAS_NO_PARENT);
-    }
-
-    blockEl = createBlockMountBasedOnInlineMount(el);
-    parentEl.insertBefore(blockEl, el);
-    parentEl.removeChild(el);
-  }
-
-  return blockEl as BlockMount;
-}
-
 export function isUsed(mount: Mount): boolean {
   return !!mount.dataset.mountUsed;
 }
@@ -173,7 +116,6 @@ export function selectMounts(
     exact = false,
     includeOwnUsed = false,
     markAsUsed = true,
-    convertToBlock = true,
   }: SelectMountsOptions = {}
 ): Mount[] {
   const s =
@@ -191,6 +133,6 @@ export function selectMounts(
     )
     .map((mount) => {
       markAsUsed && useMount(mount);
-      return convertToBlock ? ensureBlockMount(mount) : mount;
+      return mount;
     });
 }
