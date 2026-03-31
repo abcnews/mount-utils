@@ -2,8 +2,7 @@ type MountValue = string;
 type MountValuePrefix = string;
 type MountSelector = string;
 type MountSelectorTemplate = string[];
-type BlockMount = Element & {
-  tagName: 'DIV';
+type BlockMount = HTMLDivElement & {
   id: MountValue;
   dataset: {
     mount: string;
@@ -81,8 +80,8 @@ export function isMount(
     (value === undefined
       ? x.matches(MOUNT_SELECTOR)
       : exact
-      ? x.matches(exactMountSelector(value))
-      : x.matches(prefixedMountSelector(value)))
+        ? x.matches(exactMountSelector(value))
+        : x.matches(prefixedMountSelector(value)))
   );
 }
 
