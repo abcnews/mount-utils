@@ -66,8 +66,8 @@ function isNode(x: unknown): x is Node {
   return typeof x === 'object' && x instanceof Node;
 }
 
-function isElement(x: unknown): x is Element {
-  return isNode(x) && x.nodeType === Node.ELEMENT_NODE;
+function isDiv(x: unknown): x is HTMLDivElement {
+  return isNode(x) && x instanceof HTMLElement && x.tagName === 'DIV';
 }
 
 export function isMount(
@@ -76,7 +76,7 @@ export function isMount(
   exact: boolean = false
 ): x is Mount {
   return (
-    isElement(x) &&
+    isDiv(x) &&
     (value === undefined
       ? x.matches(MOUNT_SELECTOR)
       : exact
